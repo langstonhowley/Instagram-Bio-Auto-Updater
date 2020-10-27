@@ -27,11 +27,11 @@ git clone https://github.com/langstonhowley/Instagram-Bio-Auto-Updater.git
 # go into the project directory
 cd Instagram-Bio-Auto-Updater
 # install all of the required packages
-pip3 install requirements.txt
+pip3 install -r requirements.txt
 # create a .env folder and insert your credentials
 touch .env
-echo "INSTAGRAM_USERNAME = {YOUR_INSTA_USERNAME}" > .env
-echo "INSTAGRAM_PASSWORD = {YOUR_INSTA_PASSWORD}" > .env
+echo "INSTAGRAM_USERNAME = {YOUR_INSTA_USERNAME}" >> .env
+echo "INSTAGRAM_PASSWORD = {YOUR_INSTA_PASSWORD}" >> .env
 # run the updater 😁
 python3 main.py
 ```
