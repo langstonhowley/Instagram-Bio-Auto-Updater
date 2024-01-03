@@ -1,4 +1,4 @@
-#    Copyright 2020 Langston Howley
+#    Copyright 2024 Langston Howley
 
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,89 +13,91 @@
 #    limitations under the License.
 
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-import time
-from selenium.common.exceptions import NoSuchElementException
-import sys
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from skylive_requester import planet_location
+
 import datetime
+import time
 import random
-from decouple import config
+import os
 
 
-USRN = config('INSTAGRAM_USERNAME')
-PASS = config('INSTAGRAM_PASSWORD')
+USRN = os.environ.get("INSTAGRAM_USERNAME")
+PASS = os.environ.get("INSTAGRAM_PASSWORD")
 FIRST_UPDATE = True
 
+# Setting up the webdriver
+driver = webdriver.Chrome()
 
-#Setting up the webdriver
-options = webdriver.ChromeOptions()
-'''
-options.add_argument('headless')
-options.add_argument('window-size=1920x1080')
-options.add_argument("disable-gpu")
-'''
+driver.implicitly_wait(30)
+driver.get("https://www.instagram.com/")
 
 
-chrome_driver_path = '/Users/langston/Library/Application Support/Google/chromedriver'
-driver = webdriver.Chrome(chrome_driver_path, options=options)
-
-driver.implicitly_wait(6)
-driver.get('https://www.instagram.com/')
-
-
-#Login
-username_feild = WebDriverWait(driver,3).until(lambda d: d.find_element_by_css_selector('input[name="username"]')) #driver.find_element_by_css_selector('input[name="username"]') #driver.find_element_by_name('username')
-password_field = driver.find_element_by_css_selector('input[name="password"]') #driver.find_element_by_name('password')
-form = driver.find_element_by_id('loginForm')
-
+# Login
+username_feild = WebDriverWait(driver, 10).until(
+    lambda d: d.find_element(By.CSS_SELECTOR, 'input[name="username"]')
+)
 username_feild.send_keys(USRN)
+
+password_field = driver.find_element(By.CSS_SELECTOR, 'input[name="password"]')
 password_field.send_keys(PASS)
+
+form = driver.find_element(By.ID, "loginForm")
 form.submit()
 
-WebDriverWait(driver,5).until(EC.staleness_of(username_feild))
-#Getting passed the "save login info"
-not_now_button = driver.find_element_by_css_selector('button.sqdOP.yWX7d.y3zKF') #WebDriverWait(driver,3).until(lambda d: d.find_element_by_css_selector('button.sqdOP.yWX7d.y3zKF')) 
+# Getting passed the "save login info"
+not_now_button = driver.find_element(
+    By.XPATH,
+    "/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/section/main/div/div/div/div/div",
+)
 not_now_button.click()
 
-#Getting passed the notifications
-not_now_button2 = driver.find_element_by_css_selector('button.aOOlW.HoLwm') #WebDriverWait(driver,3).until(lambda d: d.find_element_by_css_selector('button.aOOlW.HoLwm')) 
+# Getting passed the notifications
+not_now_button2 = driver.find_element(
+    By.XPATH,
+    "/html/body/div[3]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]/button[2]",
+)
 not_now_button2.click()
 
-#Now in the home page
-profile_link = driver.find_element_by_link_text(USRN)
-profile_link.click()
+# Go to profile page
+driver.get("https://www.instagram.com/accounts/edit/")
 
+planet_list = ["Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"]
 
-#Now in the profile page
-edit_profile = driver.find_element_by_link_text('Edit Profile') #WebDriverWait(driver,3).until(lambda d:  d.find_element_by_link_text('Edit Profile'))
-edit_profile.click()
-
-#Now in the Edit Profile page
+# Now in the Edit Profile page
 while True:
-    if(not FIRST_UPDATE):
-        time.sleep(60*10)
+    try:
+        # 60 minute timer
+        if not FIRST_UPDATE:
+            time.sleep(60 * 60)
 
-    planet_list = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
-    bio_textarea = driver.find_element_by_id('pepBio')
+        # Get the planet information from https://theskylive.com/
+        planet = random.choice(planet_list)
+        planet_info = planet_location(planet)
+        new_bio = "{} RA|DEC|CO: {} | {} | {}\nWhen: {}".format(
+            planet,
+            planet_info[1],
+            planet_info[2],
+            planet_info[3],
+            datetime.datetime.now().strftime("%Y-%m-%d @ %H:%M:%S"),
+        )
 
-    planet_info = planet_location(random.choice(planet_list))
-    new_bio = '{} RA|DEC|CO: {} | {} | {}\nWhen: {}'.format(planet_info[1],planet_info[2],planet_info[3], planet_info[7],datetime.datetime.now().strftime("%Y-%m-%d @ %H:%M:%S"))
+        # Find the text area and type the planet info in it
+        bio_textarea = driver.find_element(By.ID, "pepBio")
 
-    if(len(new_bio) < 150):
-        bio_textarea.clear()
-        bio_textarea.send_keys(new_bio)
+        if len(new_bio) < 150:
+            bio_textarea.clear()
+            bio_textarea.send_keys(new_bio)
 
-    WebDriverWait(driver,10).until(EC.visibility_of_element_located((By.CSS_SELECTOR,'button.sqdOP.L3NKy.y3zKF')))
-    bio_submit_button = driver.find_element_by_css_selector('button.sqdOP.L3NKy.y3zKF')
-    driver.execute_script("arguments[0].scrollIntoView(true);", bio_submit_button)
-    bio_submit_button.click()
+        # Submit
+        bio_submit_button = driver.find_element(
+            By.XPATH,
+            "/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/section/main/div/div[3]/div/div/form/div[4]/div",
+        )
+        driver.execute_script("arguments[0].scrollIntoView(true);", bio_submit_button)
+        bio_submit_button.click()
 
-    FIRST_UPDATE = False
-#driver.close()
-
-
-
+        FIRST_UPDATE = False
+    except Exception:
+        driver.close()

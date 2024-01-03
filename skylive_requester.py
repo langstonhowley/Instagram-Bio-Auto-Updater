@@ -15,19 +15,19 @@
 from bs4 import BeautifulSoup
 import urllib.request
 
-def planet_location(planet='Mars'):
-    SKY_LIVE_URL = 'https://theskylive.com/'
-    sky_live_page = urllib.request.urlopen(SKY_LIVE_URL)
-    soup = BeautifulSoup(sky_live_page,'html.parser')
 
-    table_row = soup.find_all(title=planet)[0].find_parent('tr')
+def planet_location(planet="Mars"):
+    SKY_LIVE_URL = "https://theskylive.com/"
+    sky_live_page = urllib.request.urlopen(SKY_LIVE_URL)
+    soup = BeautifulSoup(sky_live_page, "html.parser")
+
+    table_row = soup.find_all(title=planet)[0].find_parent("tr")
     table_data = []
-    for data in table_row.find_all('td'):
+    for data in table_row.find_all("td"):
         table_data.append(data.text.strip())
-    
+
     return table_data
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     planet_location()
-
-
